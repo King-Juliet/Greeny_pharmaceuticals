@@ -1,0 +1,9 @@
+pandas
+numpy
+psycopg2-binary
+sqlalchemy
+boto3
+python-dotenv
+pyarrow
+gspread
+google-auth

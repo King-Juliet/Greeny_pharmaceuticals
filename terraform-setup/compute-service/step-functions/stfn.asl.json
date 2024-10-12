@@ -1,0 +1,356 @@
+{
+    "Comment": "State Machine to orchestrate Lambda functions",
+    "StartAt": "ExtractGoogleSheetToS3",
+    "States": {
+        "ExtractGoogleSheetToS3":{
+            "Type": "Task",
+            "Resource": "",
+            "Parameters":{
+                "sheet_url": "https://docs.google.com/spreadsheets/d/1MAXKh5YJxnGRngoI7YhhEW8ryqM-SsbOpvucLOE2gH0/edit",
+                "sheet_name": "Form_responses_1",
+                "credentials_key": "credentials_key/credentials.json",
+                "bucket_name": "${s3_bucket}"
+            },
+        
+
+        "Next": "ExtractAndLoadDataFromRDSToS3Raw"
+    },
+    
+    "ExtractAndLoadDataFromRDSToS3Raw":{
+            "Type": "Parallel",
+            "Branches":[
+                {
+                    "StartAt": "ExtractCustomers",
+                    "States":{
+                        "ExtractCustomers":{
+                            "Type": "Task",
+                            "Resource":"arn:aws:lambda:eu-north-1:account-id:function:lambda_src_to_s3_raw",
+                            "Parameters":{
+                              "db_name":"greeny_data",
+                              "db_user": "juli",
+                              "db_password": "${db_password}",
+                              "db_host": "redshift-connection-endpoint",
+                              "db_port": "5432",
+                              "schema": "public",
+                              "tablename": "customers",
+                              "s3_bucket": "${s3_bucket}",
+                              "s3_prefix": "raw",
+                              "date_suffix": "2024-10-01"
+                            },
+                            "End": true
+                        }
+                    }
+
+                },
+                {
+                    "StartAt": "ExtractDepartments",
+                    "States": {
+                        "ExtractDepartments":{
+                            "Type": "Task",
+                            "Resource": "arn:aws:lambda:eu-north-1:account-id:function:lambda_src_to_s3_raw",
+                            "Parameters":{
+                              "db_name":"greeny_data",
+                              "db_user": "juli",
+                              "db_password": "${db_password}",
+                              "db_host": "redshift-connection-endpoint",
+                              "db_port": "5432",
+                              "schema": "public",
+                              "tablename": "departments",
+                              "s3_bucket": "${s3_bucket}",
+                              "s3_prefix": "raw",
+                              "date_suffix": "2024-10-01"
+                            },
+                            "End": true
+                        }
+                    }
+                },
+                {
+                    "StartAt": "ExtractEmployees",
+                    "States": {
+                        "ExtractEmployees": {
+                            "Type": "Task",
+                            "Resource": "arn:aws:lambda:eu-north-1:account-id:function:lambda_src_to_s3_raw",
+                            "Parameters":{
+                              "db_name":"greeny_data",
+                              "db_user": "juli",
+                              "db_password": "${db_password}",
+                              "db_host": "redshift-connection-endpoint",
+                              "db_port": "5432",
+                              "schema": "public",
+                              "tablename": "employees",
+                              "s3_bucket": "${s3_bucket}",
+                              "s3_prefix": "raw",
+                              "date_suffix": "2024-10-01"
+                            },
+                            "End": true
+                        }
+                    }
+                },
+                {
+                    "StartAt": "ExtractInventory",
+                    "States": {
+                        "ExtractInventory": {
+                            "Type": "Task",
+                            "Resource": "arn:aws:lambda:eu-north-1:account-id:function:lambda_src_to_s3_raw",
+                            "Parameters": {
+                              "db_name":"greeny_data",
+                              "db_user": "juli",
+                              "db_password": "${db_password}",
+                              "db_host": "redshift-connection-endpoint",
+                              "db_port": "5432",
+                              "schema": "public",
+                              "tablename": "inventory",
+                              "s3_bucket": "${s3_bucket}",
+                              "s3_prefix": "raw",
+                              "date_suffix": "2024-10-01"
+                            },
+                            "End": true
+                        }
+                    }
+                },
+                {
+                    "StartAt": "ExtractOrders",
+                    "States": {
+                        "ExtractOrders": {
+                            "Type": "Task",
+                            "Resource": "arn:aws:lambda:eu-north-1:account-id:function:lambda_src_to_s3_raw",
+                            "Parameters": {
+                              "db_name":"greeny_data",
+                              "db_user": "juli",
+                              "db_password": "${db_password}",
+                              "db_host": "redshift-connection-endpoint",
+                              "db_port": "5432",
+                              "schema": "public",
+                              "tablename": "orders",
+                              "s3_bucket": "${s3_bucket}",
+                              "s3_prefix": "raw",
+                              "date_suffix": "2024-10-01"
+                            },
+                            "End": true
+                        }
+                    }
+                },
+                {
+                    "StartAt": "ExtractProducts",
+                    "States": {
+                        "ExtractProducts":{
+                            "Type": "Task",
+                            "Resource": "arn:aws:lambda:eu-north-1:account-id:function:lambda_src_to_s3_raw",
+                            "Parameters":{
+                              "db_name":"greeny_data",
+                              "db_user": "juli",
+                              "db_password": "${db_password}",
+                              "db_host": "redshift-connection-endpoint",
+                              "db_port": "5432",
+                              "schema": "public",
+                              "tablename": "products",
+                              "s3_bucket": "${s3_bucket}",
+                              "s3_prefix": "raw",
+                              "date_suffix": "2024-10-01"
+                            },
+                            "End": true
+                        }
+                    }
+                },
+                {
+                    "StartAt": "ExtractPurchaseOrder",
+                    "States": {
+                        "ExtractPurchaseOrder":{
+                            "Type": "Task",
+                            "Resource": "arn:aws:lambda:eu-north-1:account-id:function:lambda_src_to_s3_raw",
+                            "Parameters": {
+                              "db_name":"greeny_data",
+                              "db_user": "juli",
+                              "db_password": "${db_password}",
+                              "db_host": "redshift-connection-endpoint",
+                              "db_port": "5432",
+                              "schema": "public",
+                              "tablename": "purchase_order",
+                              "s3_bucket": "${s3_bucket}",
+                              "s3_prefix": "raw",
+                              "date_suffix": "2024-10-01"
+                            },
+                            "End": true
+                        }
+                    }
+                },
+                {
+                    "StartAt": "ExtractSuppliers",
+                    "States": {
+                        "ExtractSuppliers":{
+                            "Type": "Task",
+                            "Resource": "arn:aws:lambda:eu-north-1:account-id:function:lambda_src_to_s3_raw",
+                            "Parameters":{
+                              "db_name":"greeny_data",
+                              "db_user": "juli",
+                              "db_password": "${db_password}",
+                              "db_host": "redshift-connection-endpoint",
+                              "db_port": "5432",
+                              "schema": "public",
+                              "tablename": "suppliers",
+                              "s3_bucket": "${s3_bucket}",
+                              "s3_prefix": "raw",
+                              "date_suffix": "2024-10-01"
+                            },
+                            "End": true
+                        }
+                    }
+                }
+                
+            ],
+       
+            "Next": "ExtractFromS3RawToStaging"
+        
+        },
+        "ExtractFromS3RawToStaging":{
+            "Type": "Task",
+            "Resource": "arn:aws:lambda:eu-north-1:account-id:function:lambda_s3raw_to_s3staging",
+            "Parameters": {
+                "s3_bucket": "${s3_bucket}",
+                "s3_raw_prefix": "${s3_raw_prefix}",
+                "s3_staging_prefix": "${s3_staging_prefix}",
+                "filename_filters":{
+                    "customers":["Business", "Admin"],
+                    "orders": ["Business", "Admin"],
+                    "suppliers": ["Inventory", "Admin"],
+                    "products": ["Business", "Inventory", "Admin"],
+                    "inventory": ["Inventory", "Admin", "Business"],
+                    "employees": ["HR", "Admin", "Business"],
+                    "departments": ["HR", "Admin"]
+                },
+                "date_suffix" : "2024-10-01"
+
+            },
+            "Next": "DataProcessing"
+        },
+        "DataProcessing":{
+            "Type": "Parallel",
+            "Branches": [
+                {
+                    "StartAt": "ProcessCustomers",
+                    "States": {
+                        "ProcessCustomers":{
+                            "Type": "Task",
+                            "Resource": "arn:aws:lambda:eu-north-1:account-id:function:lambda_customers_processing_func",
+                            "Parameters": {
+                                "s3_bucket": "${s3_bucket}",
+                                "prefix": "staging/Business/customers_${date_suffix}.parquet",
+                                "date_suffix" : "2024-10-01",
+                                "db_params": {
+                                    "dbname": "business-analytics",
+                                    "user": "aduser",
+                                    "password": "${redshift_db_password}",
+                                    "host": "greeny-data-workgroup.account-id.eu-north-1.redshift-serverless.amazonaws.com",
+                                    "port": 5439,
+                                    "schema": "public",
+                                    "table_name": "customers"
+                                }
+                            },
+                            "End" :true
+                        }
+                    }
+                },
+                {
+                    "StartAt": "ProcessInventory",
+                    "States": {
+                        "ProcessInventory":{
+                            "Type": "Task",
+                            "Resource": "arn:aws:lambda:eu-north-1:account-id:function:lambda_inventory_processing_func",
+                            "Parameters": {
+                                "s3_bucket": "${s3_bucket}",
+                                "prefix": "staging/Business/inventory_${date_suffix}.parquet",
+                                "date_suffix" : "2024-10-01",
+                                "db_params": {
+                                    "dbname": "business-analytics",
+                                    "user": "aduser",
+                                    "password": "${redshift_db_password}",
+                                    "host": "greeny-data-workgroup.account-id.eu-north-1.redshift-serverless.amazonaws.com",
+                                    "port": 5439,
+                                    "schema": "public",
+                                    "table_name": "inventory"
+                                }
+                            },
+                            "End" :true
+                        }
+                    }
+                },
+                {
+                    "StartAt": "ProcessOrders",
+                    "States": {
+                        "ProcessOrders": {
+                            "Type": "Task",
+                            "Resource": "arn:aws:lambda:eu-north-1:account-id:function:lambda_orders_processing_func",
+                            "Parameters": {
+                                "s3_bucket": "${s3_bucket}",
+                                "prefix": "staging/Business/orders_${date_suffix}.parquet",
+                                "date_suffix" : "2024-10-01",
+                                "db_params": {
+                                    "dbname": "business-analytics",
+                                    "user": "aduser",
+                                    "password": "${redshift_db_password}",
+                                    "host": "greeny-data-workgroup.account-id.eu-north-1.redshift-serverless.amazonaws.com",
+                                    "port": 5439,
+                                    "schema": "public",
+                                    "table_name": "orders"
+                                }
+                            },
+                            "End" :true
+                        }
+                    }
+                },
+                {
+                    "StartAt": "ProcessProducts",
+                    "States": {
+                        "ProcessProducts": {
+                            "Type": "Task",
+                            "Resource": "arn:aws:lambda:eu-north-1:account-id:function:lambda_products_processing_func",
+                            "Parameters": {
+                                "s3_bucket": "${s3_bucket}",
+                                "prefix": "staging/Business/products_${date_suffix}.parquet",
+                                "date_suffix" : "2024-10-01",
+                                "db_params": {
+                                    "dbname": "business-analytics",
+                                    "user": "aduser",
+                                    "password": "${redshift_db_password}",
+                                    "host": "greeny-data-workgroup.account-id.eu-north-1.redshift-serverless.amazonaws.com",
+                                    "port": 5439,
+                                    "schema": "public",
+                                    "table_name": "products"
+                                }
+                            },
+                            "End" :true
+                        }
+                    }
+                },
+                {
+                    "StartAt": "ProcessSuppliers",
+                    "States": {
+                        "ProcessSuppliers":{
+                            "Type": "Task",
+                            "Resource": "arn:aws:lambda:eu-north-1:account-id:function:lambda_suppliers_processing_func",
+                            "Parameters": {
+                                "s3_bucket": "${s3_bucket}",
+                                "prefix": "staging/Business/suppliers_${date_suffix}.parquet",
+                                "date_suffix" : "2024-10-01",
+                                "db_params": {
+                                    "dbname": "business-analytics",
+                                    "user": "aduser",
+                                    "password": "${redshift_db_password}",
+                                    "host": "greeny-data-workgroup.account-id.eu-north-1.redshift-serverless.amazonaws.com",
+                                    "port": 5439,
+                                    "schema": "public",
+                                    "table_name": "suppliers"
+                                }
+                            },
+                            "End" :true  
+                        }
+                    }
+                }
+                
+            ],
+            "End": true
+        }
+        
+    }
+
+}

@@ -35,7 +35,7 @@ AWS IAM : Used to manage roles, users and permissions to resources on the compan
 
 Link to medium article:
 
-
+https://medium.com/@chibuokejuliet/building-robust-data-pipeline-for-batch-processing-with-aws-services-97356b8a8820
 
 
 

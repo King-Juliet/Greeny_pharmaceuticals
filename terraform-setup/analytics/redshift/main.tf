@@ -14,26 +14,29 @@ resource "aws_security_group" "redshift_security_group" {
         cidr_blocks = ["0.0.0.0/0"] # Consider limiting this to your IP for security
     }
 
-    egress {
-        from_port   = 0
-        to_port     = 0
-        protocol    = "-1"
-        cidr_blocks = ["0.0.0.0/0"]
-    }
+     
+}
 
-    #lifecycle {
-      #  create_before_destroy = true
-   # }
+# Generate admin password for redshift
+resource "random_password" "redshift_password"{
+  length = 24
+  special = false
 }
 
 
+#Save the randomly generated admin password from line 29 to ssm
+resource "aws_ssm_parameter" "redshift_admin_password"{
+  name = "/redshift/admin_password"
+  type = "String"
+  value = random_password.redshift_password.result
+}
 
 # Namespace
 resource "aws_redshiftserverless_namespace" "greeny_data_ns" {
   namespace_name = "greeny-data-namespace"
   db_name        = "business-analytics"
   admin_username = "aduser"
-  admin_user_password = var.redshift_db_password
+  admin_user_password = aws_ssm_parameter.redshift_admin_password.value
 
   tags = {
     Name = "greeny-data-namespace"

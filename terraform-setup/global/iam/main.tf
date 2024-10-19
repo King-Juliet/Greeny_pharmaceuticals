@@ -125,7 +125,7 @@ resource "aws_iam_role_policy" "iam_business_analyst_role" {
     role = aws_iam_role.iam_business_analyst_user_assume_role.name 
     policy = data.aws_iam_policy_document.business_analyst_redshift_and_quicksight_access.json
 }
-#attach the aws managed policy "arn:aws:iam:aws:policy/AmazonQuickSightAdmin"###
+
 resource "aws_iam_role_policy" "business_analyst_quicksight_role_policy_attachment"{
     #count = length(var.user_roles)
     role = aws_iam_role.iam_business_analyst_user_assume_role.name
@@ -206,6 +206,13 @@ resource "aws_iam_user" "iam_users" {
   force_destroy = true
 }
 
+# Create random password for console access for each IAM user
+resource "random_password" "iam_user_password" {
+  count = length(var.user_names)
+  length  = 16
+  special = true
+}
+
 # Create login profile for console access (with a temporary password)
 resource "aws_iam_user_login_profile" "iam_user_login_profiles" {
   count                = length(var.user_names)
@@ -214,12 +221,6 @@ resource "aws_iam_user_login_profile" "iam_user_login_profiles" {
   password_reset_required = true  
 }
 
-# Create random password for each IAM user
-resource "random_password" "iam_user_password" {
-  count = length(var.user_names)
-  length  = 16
-  special = true
-}
 
 # Create Access Keys for each IAM user -- for programmatic access for AWS resources
 resource "aws_iam_access_key" "iam_access_keys" {

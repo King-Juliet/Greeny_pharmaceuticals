@@ -25,6 +25,19 @@ resource "aws_security_group" "your_security_group" {
     }
 }
 
+# Generate admin password for postgres RDS
+resource "random_password" "rds_password"{
+  length = 24
+  special = false
+}
+
+
+#Save the randomly generated admin password from line 29 to ssm
+resource "aws_ssm_parameter" "rds_admin_password"{
+  name = "/rds/admin_password"
+  type = "String"
+  value = random_password.rds_password.result
+}
 # Create DB instance
 resource "aws_db_instance" "greeny_data" {
     engine                 = "postgres"
@@ -34,7 +47,7 @@ resource "aws_db_instance" "greeny_data" {
     storage_type           = "gp2"
     db_name                = "greeny_data"
     username               = "juli"
-    password               = var.db_password
+    password               = aws_ssm_parameter.rds_admin_password.value
     port                   = 5432
     publicly_accessible    = true
     backup_retention_period = 7

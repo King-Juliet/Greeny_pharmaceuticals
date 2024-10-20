@@ -5,7 +5,7 @@ The aim of this project is to design and implement a robust data pipeline for Gr
 
 # Project Requirements and Dependencies
 
-VsCode -- The IDE used 
+VsCode -- The IDE used.
 
 AWS account -- To enable one use AWS services 
 

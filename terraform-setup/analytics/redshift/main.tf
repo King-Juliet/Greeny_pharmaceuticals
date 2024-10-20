@@ -31,7 +31,7 @@ resource "aws_ssm_parameter" "redshift_admin_password"{
   value = random_password.redshift_password.result
 }
 
-# Namespace
+# Namespace.
 resource "aws_redshiftserverless_namespace" "greeny_data_ns" {
   namespace_name = "greeny-data-namespace"
   db_name        = "business-analytics"

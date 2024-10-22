@@ -38,6 +38,12 @@ resource "aws_ssm_parameter" "rds_admin_password"{
   type = "String"
   value = random_password.rds_password.result
 }
+
+#Retrieve existing admin username created and saved in AWS SSM parameter store
+data "aws_ssm_parameter" "rds_admin_username"{
+    name = "/rds/admin_username"
+}
+
 # Create DB instance
 resource "aws_db_instance" "greeny_data" {
     engine                 = "postgres"
@@ -46,7 +52,7 @@ resource "aws_db_instance" "greeny_data" {
     instance_class         = "db.t3.micro"
     storage_type           = "gp2"
     db_name                = "greeny_data"
-    username               = "juli"
+    username               = data.aws_ssm_parameter.rds_admin_username.value
     password               = aws_ssm_parameter.rds_admin_password.value
     port                   = 5432
     publicly_accessible    = true

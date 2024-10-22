@@ -31,11 +31,16 @@ resource "aws_ssm_parameter" "redshift_admin_password"{
   value = random_password.redshift_password.result
 }
 
+#Retrieve existing admin username created and saved in AWS SSM parameter store
+data "aws_ssm_parameter" "redshift_admin_username"{
+  name = "/redshift/admin_username"
+}
+
 # Namespace.
 resource "aws_redshiftserverless_namespace" "greeny_data_ns" {
   namespace_name = "greeny-data-namespace"
   db_name        = "business-analytics"
-  admin_username = "aduser"
+  admin_username = data.aws_ssm_parameter.redshift_admin_username.value
   admin_user_password = aws_ssm_parameter.redshift_admin_password.value
 
   tags = {

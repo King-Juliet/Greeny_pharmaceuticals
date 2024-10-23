@@ -13,12 +13,12 @@ provider "aws" {
         principals {
         type        = "AWS"
       identifiers = [
-        "arn:aws:iam::account-id:user/Emma",
-        "arn:aws:iam::account-id:user/Bello",
-        "arn:aws:iam::account-id:user/Leo",
-        "arn:aws:iam::account-id:user/Gafar",
-        "arn:aws:iam::account-id:user/Mary",
-        "arn:aws:iam::account-id:user/Eniola"
+        "arn:aws:iam::<account-id>:user/Emma",
+        "arn:aws:iam::<account-id>:user/Bello",
+        "arn:aws:iam::<account-id>:user/Leo",
+        "arn:aws:iam::<account-id>:user/Gafar",
+        "arn:aws:iam::<account-id>:user/Mary",
+        "arn:aws:iam::<account-id>:user/Eniola"
         ]
     }
 
@@ -40,7 +40,7 @@ data "aws_iam_policy_document" "business_analyst_redshift_and_quicksight_access"
             "quicksight:UpdateDataSource",
         ]
         resources = [
-            "arn:aws:redshift:eu-north-1:account-id:namespace:greeny-data-namespace"
+            "arn:aws:redshift:eu-north-1:<account-id>:namespace:greeny-data-namespace"
 
         ]
     }
@@ -79,7 +79,9 @@ data "aws_iam_policy_document" "inventory_manager_rds_access"{
         effect = "Allow"
         actions = ["rds-db:connect"]
         resources =  [
-          "arn:aws:rds:eu-north-1:account-id:db:greeny_data"
+          "arn:aws:rds:eu-north-1:<account-id>:db:greeny_data",
+          "arn:aws:rds-db:<region>:<account-id>:dbuser:<instance-id>/<database-user>"
+          
 ]
 
     }
@@ -94,7 +96,8 @@ data "aws_iam_policy_document" "inventory_personnel_rds_access"{
             "rds-data:ExecuteStatement"
         ]
         resources = [
-    "arn:aws:rds:eu-north-1:account-id:db:greeny_data"
+    "arn:aws:rds:eu-north-1:<account-id>:db:greeny_data",
+    "arn:aws:rds-db:eu-north-1:<account-id>:dbuser:<instance-id>/<database-user>"
 ]
 
     }

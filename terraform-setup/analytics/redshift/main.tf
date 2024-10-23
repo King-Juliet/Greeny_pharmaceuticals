@@ -26,16 +26,25 @@ resource "random_password" "redshift_password"{
 
 #Save the randomly generated admin password from line 29 to ssm
 resource "aws_ssm_parameter" "redshift_admin_password"{
-  name = "/redshift/admin_password"
+  name = "/production/redshift/admin_password"
   type = "String"
   value = random_password.redshift_password.result
+  tags = {
+    Environment = "Production"
+    Owner = "Data-engineers"
+  }
 }
 
-# Namespace
+#Retrieve existing admin username created and saved in AWS SSM parameter store
+data "aws_ssm_parameter" "redshift_admin_username"{
+  name = "/production/redshift/admin_username"
+}
+
+# Namespace.
 resource "aws_redshiftserverless_namespace" "greeny_data_ns" {
   namespace_name = "greeny-data-namespace"
   db_name        = "business-analytics"
-  admin_username = "aduser"
+  admin_username = data.aws_ssm_parameter.redshift_admin_username.value
   admin_user_password = aws_ssm_parameter.redshift_admin_password.value
 
   tags = {

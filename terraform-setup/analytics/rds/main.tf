@@ -34,14 +34,14 @@ resource "random_password" "rds_password"{
 
 #Save the randomly generated admin password from line 29 to ssm
 resource "aws_ssm_parameter" "rds_admin_password"{
-  name = "/rds/admin_password"
+  name = "/production/rds/admin_password"
   type = "String"
   value = random_password.rds_password.result
 }
 
 #Retrieve existing admin username created and saved in AWS SSM parameter store
 data "aws_ssm_parameter" "rds_admin_username"{
-    name = "/rds/admin_username"
+    name = "/production/rds/greeny_pharma_admin_username"
 }
 
 # Create DB instance

@@ -26,14 +26,14 @@ resource "random_password" "redshift_password"{
 
 #Save the randomly generated admin password from line 29 to ssm
 resource "aws_ssm_parameter" "redshift_admin_password"{
-  name = "/redshift/admin_password"
+  name = "/production/redshift/admin_password"
   type = "String"
   value = random_password.redshift_password.result
 }
 
 #Retrieve existing admin username created and saved in AWS SSM parameter store
 data "aws_ssm_parameter" "redshift_admin_username"{
-  name = "/redshift/admin_username"
+  name = "/production/redshift/admin_username"
 }
 
 # Namespace.

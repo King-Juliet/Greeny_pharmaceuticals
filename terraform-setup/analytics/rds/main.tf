@@ -37,6 +37,10 @@ resource "aws_ssm_parameter" "rds_admin_password"{
   name = "/production/rds/admin_password"
   type = "String"
   value = random_password.rds_password.result
+  tags = {
+    Environment = "Production"
+    Owner = "Data-engineers"
+  }
 }
 
 #Retrieve existing admin username created and saved in AWS SSM parameter store

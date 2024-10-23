@@ -29,6 +29,10 @@ resource "aws_ssm_parameter" "redshift_admin_password"{
   name = "/production/redshift/admin_password"
   type = "String"
   value = random_password.redshift_password.result
+  tags = {
+    Environment = "Production"
+    Owner = "Data-engineers"
+  }
 }
 
 #Retrieve existing admin username created and saved in AWS SSM parameter store

@@ -303,13 +303,6 @@ resource aws_iam_user_policy ecr_user {
     policy = data.aws_iam_policy_document.ecr_user_policy.json  
 }
 
-# Attach CI-CD policy to CI-CD-User
-resource aws_iam_user_policy ci_cd_user {
-    name = "CICDUserPolicyAttachment"
-    user = aws_iam_user.iam_users[7].name #CICDUser is in index 6
-    policy = data.aws_iam_policy_document.ci_cd_user_policy.json  
-}
-
 # ALLOW USER ASSUME ROLE -- you cant directly attach roles to users, but rather allow user assume role
 
 #Policy to allow Emma assume business analyst role

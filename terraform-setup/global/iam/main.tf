@@ -18,7 +18,7 @@ provider "aws" {
         "arn:aws:iam::<account-id>:user/Leo",
         "arn:aws:iam::<account-id>:user/Gafar",
         "arn:aws:iam::<account-id>:user/Mary",
-        "arn:aws:iam::<account-id>:user/Eniola"
+        "arn:aws:iam::<account-id>:user/Eniola",
         ]
     }
 
@@ -117,6 +117,27 @@ data "aws_iam_policy_document" "ml_engineer_s3_access"{
 }
 }
 
+
+# create policy for ECRUser to allow the user list, and push images to ECR
+data "aws_iam_policy_document" "ecr_user_policy" {
+  statement {
+    effect = "Allow"
+    actions = [
+                "ecr:GetAuthorizationToken",
+                "ecr:CompleteLayerUpload",
+                "ecr:UploadLayerPart",
+                "ecr:InitiateLayerUpload",
+                "ecr:BatchCheckLayerAvailability",
+                "ecr:PutImage",
+                "ecr:BatchGetImage"
+    ]
+    resources = [
+                  "arn:aws:ecr:region:<account-id>:repository/repository-name"
+    ]
+  }
+}
+
+
 # Create IAM roles and attach policies
 #Business_analyst
 resource "aws_iam_role" "iam_business_analyst_user_assume_role" {
@@ -160,8 +181,6 @@ resource "aws_iam_role_policy" "iam_inventory_manager_role" {
    role = aws_iam_role.iam_inventory_manager_assume_role.name
    policy = data.aws_iam_policy_document.inventory_manager_rds_access.json
 }
-
-
 
 
 #inventory personnel
@@ -277,6 +296,19 @@ resource "aws_iam_user_policy_attachment" "user_secrets_access" {
   policy_arn = aws_iam_policy.iam_user_secrets_policy[count.index].arn
 }
 
+# Attach ECRUser policy to ECRUser
+resource aws_iam_user_policy ecr_user {
+    name = "ECRUserPolicyAttachment"
+    user = aws_iam_user.iam_users[6].name #ECRUser is in index 6
+    policy = data.aws_iam_policy_document.ecr_user_policy.json  
+}
+
+# Attach CI-CD policy to CI-CD-User
+resource aws_iam_user_policy ci_cd_user {
+    name = "CICDUserPolicyAttachment"
+    user = aws_iam_user.iam_users[7].name #CICDUser is in index 6
+    policy = data.aws_iam_policy_document.ci_cd_user_policy.json  
+}
 
 # ALLOW USER ASSUME ROLE -- you cant directly attach roles to users, but rather allow user assume role
 

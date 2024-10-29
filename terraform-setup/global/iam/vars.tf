@@ -7,7 +7,7 @@ variable "user_roles"{
 variable "user_names"{
     description = "Create iam user names with these names"
     type = list(string)
-    default = ["Emma", "Bello", "Leo", "Gafar","Mary", "Eniola"]
+    default = ["Emma", "Bello", "Leo", "Gafar","Mary", "Eniola", "ECRUser"]
 }
 
 # hr = can only add new record to the employees table on the source database 

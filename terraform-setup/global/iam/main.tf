@@ -117,9 +117,37 @@ data "aws_iam_policy_document" "ml_engineer_s3_access"{
 }
 }
 
+#Create github actions OIDC provider
+resource "aws_iam_openid_connect_provider" "github_actions" {
+  url = "https://token.actions.githubusercontent.com"
 
-# create policy for ECRUser to allow the user list, and push images to ECR
-data "aws_iam_policy_document" "ecr_user_policy" {
+  client_id_list = ["sts.amazonaws.com"]
+
+  thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1"]
+}
+
+#Create assume role policy for GitHub Actions to allow it assume role created for it
+data "aws_iam_policy_document" "github_actions_assume_role_policy" {
+  statement {
+    effect = "Allow"
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+
+    principals {
+      type        = "Federated"
+      identifiers = [aws_iam_openid_connect_provider.github_actions.arn]
+    }
+
+    condition {
+      test     = "StringLike"
+      variable = "token.actions.githubusercontent.com:sub"
+      values   = ["repo:King-Juliet/Greeny_pharmaceuticals:*"]
+    }
+  }
+}
+
+
+# create policy for github actions to allow it authenticate to, list, and push images to ECR
+data "aws_iam_policy_document" "github_actions_access_ecr_policy" {
   statement {
     effect = "Allow"
     actions = [
@@ -139,6 +167,16 @@ data "aws_iam_policy_document" "ecr_user_policy" {
 
 
 # Create IAM roles and attach policies
+#Github actions role
+resource "aws_iam_role" "github_actions_ecr_assume_role"{
+  name = "github-actions-ecr-role"
+  assume_role_policy = data.aws_iam_policy_document.github_actions_assume_role_policy.json
+}
+
+resource "aws_iam_role_policy" "github_actions_ecr_role"{
+  role = aws_iam_role.github_actions_ecr_assume_role.name
+  policy = data.aws_iam_policy_document.github_actions_access_ecr_policy.json
+}
 #Business_analyst
 resource "aws_iam_role" "iam_business_analyst_user_assume_role" {
     name = "${var.user_roles[0]}-role"  #business_analyst is index 0
@@ -294,13 +332,6 @@ resource "aws_iam_user_policy_attachment" "user_secrets_access" {
   count      = length(var.user_names)
   user       = aws_iam_user.iam_users[count.index].name
   policy_arn = aws_iam_policy.iam_user_secrets_policy[count.index].arn
-}
-
-# Attach ECRUser policy to ECRUser
-resource aws_iam_user_policy ecr_user {
-    name = "ECRUserPolicyAttachment"
-    user = aws_iam_user.iam_users[6].name #ECRUser is in index 6
-    policy = data.aws_iam_policy_document.ecr_user_policy.json  
 }
 
 # ALLOW USER ASSUME ROLE -- you cant directly attach roles to users, but rather allow user assume role

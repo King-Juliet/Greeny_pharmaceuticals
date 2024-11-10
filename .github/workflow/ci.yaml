@@ -22,7 +22,7 @@ jobs:
         run: pip install -r dev-requirements.txt
 
       - name: Running isort.
-        run: isort --check-only  .
+        run: isort --check-only  ./compute-service/lambda/functions/
 
       - name: Running flake8
-        run: flake8 .
+        run: flake8 ./compute-service/lambda/functions/

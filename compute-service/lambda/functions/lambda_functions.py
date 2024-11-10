@@ -18,10 +18,23 @@ from helper_functions import check_and_replace_regex, values_checker
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-# EXTRACT AND LOAD DATA FROM RDS TO S3 BUCKET
-
 
 def upload_src_data_to_s3(event, context):
+    """
+    Loads data from source database to s3 bucket raw zone as parquet.
+    Parameters:
+    - db_name(str): name of the source database
+    - db_user(str): name of the database user
+    - db_password(str): the database password
+    - db_host(str): the database host
+    - db_port(str): the port of the database
+    - schema(str): database schema of interest
+    - tablename(str): name of the table of interest
+    - s3_bucket(str): name of destination s3 bucket
+    - s3_prefix(str): the key in the s3 bucket to store the data
+    - date_suffix(datetime object): the date the data was created on the source
+
+    """
     db_name = event.get('db_name')
     db_user = event.get('db_user')
     db_password = event.get('db_password')
@@ -32,13 +45,6 @@ def upload_src_data_to_s3(event, context):
     s3_bucket = event.get('s3_bucket')
     s3_prefix = event.get('s3_prefix')
     date_suffix = event.get('date_suffix')
-    # uncomment this if you plan to follow the uncomment instruction
-    # try:
-    # convert user input to date formart
-    # date_object = datetime.strptime(date_suffix, '%Y-%m-%d')
-    # except ValueError:
-    # print(f"Error encountered. Provided date, '{date_suffix}'
-    # is not in format(YYYY-mm-dd) !!")
 
     # Connect to PostgreSQL
     database_params = {
@@ -48,7 +54,6 @@ def upload_src_data_to_s3(event, context):
         "host": db_host,
         "port": db_port
     }
-
     # Establish connection to the database
     cnxn = None
     cursor = None
@@ -57,26 +62,19 @@ def upload_src_data_to_s3(event, context):
     try:
         cnxn = psycopg2.connect(**database_params)
         cursor = cnxn.cursor()
+
         # Extract data from specific product ids in the database
         sql_query = f"SELECT * FROM {schema}.{tablename} ;"
-
-        # uncomment this to replace sql query if you want to filter record by
-        # specified date_suffix
-        # sql_query = f"SELECT*FROM {schema}.{tablename}
-        # WHERE date_column = %s"
-        #  #prevents sql injection cause value is user input.
-
         cursor.execute(sql_query)
-        # uncomment this for query execution if you are uncommenting the others
-        # to replace line of code
-        # cursor.execute(sql_query, (date_suffix,))
-
         data = cursor.fetchall()
+
         # Get column names
         column_names = [desc[0] for desc in cursor.description]
+
         # Print status message
-        print(f"Data successfully extracted from {
-              schema}.{tablename} in {db_name} database!")
+        print(
+            f"Data successfully extracted from {schema}.{tablename}\
+                  in {db_name} database!")
     except Exception as ex:
         print(f"Error: {ex}")
     finally:
@@ -84,15 +82,9 @@ def upload_src_data_to_s3(event, context):
             cursor.close()
         if cnxn:
             cnxn.close()
-
     if not data:
         print("No data extracted. Exiting...")
         return
-
-    # Write extracted data and columns to CSV
-    # csv_content =
-    # ','.join(column_names) + "\n" + "\n".join([','.join(map(str, row))
-    #  for row in data])
 
     # Convert data to Pandas DataFrame
     df = pd.DataFrame(data, columns=column_names)
@@ -109,7 +101,6 @@ def upload_src_data_to_s3(event, context):
     try:
         s3_client.put_object(
             Body=buffer,
-            # Body=csv_content,
             Bucket=s3_bucket,
             Key=destination_filename
         )
@@ -119,10 +110,18 @@ def upload_src_data_to_s3(event, context):
     except Exception as ex:
         print(f"Error uploading to S3: {ex}")
 
-# EXTRACT DATA FROM S3 RAW TO STAGING
-
 
 def s3raw_to_s3staging(event, context):
+    """
+    Extracts data in the raw zone of s3 bucket to s3 bucket staging zone.
+    Parameters:
+    - s3_bucket(str): name of destination s3 bucket
+    - s3_raw_prefix(str): raw zone key in the s3 bucket
+    - s3_staging_prefix(str): staging zone key in the s3 bucket
+    - filename_filters(dict): dictionary of how files should be grouped
+       when loading to staging zone in the s3 bucket.
+    - date_suffix(datetime object): the date the data was created on the source
+    """
     s3_bucket = event.get('s3_bucket')
     s3_raw_prefix = event.get('s3_raw_prefix')
     s3_staging_prefix = event.get('s3_staging_prefix')
@@ -143,12 +142,6 @@ def s3raw_to_s3staging(event, context):
     for obj in objects['Contents']:
         # Extract the full filename from the S3 object key
         raw_filename = obj['Key'].split('/')[-1]
-        # Uncomment this if you want to extract file from bucket based on
-        # specified date suffix on the file
-        # if not raw_filename.endswith(date_suffix):
-        # print(f"filename '{raw_filename}' doesn't end with '{date_suffix}'
-        # . Skipping...")
-        #     continue
 
         # Check if the filename matches any of the filters
         for filter_key, categories in filename_filters.items():
@@ -179,17 +172,32 @@ def s3raw_to_s3staging(event, context):
                             Bucket=s3_bucket,
                             Key=destination_path
                         )
-                        print(f"File '{raw_filename}' successfully moved to '{
-                              destination_path}'")
+                        print(
+                            f"File '{raw_filename}'\
+                                  successfully moved to '{destination_path}'")
                     except Exception as ex:
                         print(f"Error processing file '{raw_filename}': {ex}")
                 break
         else:
-            print(f"Filename '{
-                  raw_filename}' does not match any filters. Skipping...")
+            print(
+                f"Filename '{raw_filename}'\
+                      does not match any filters. Skipping...")
 
 
 def google_form_to_s3(event, context):
+    """
+    Extracts data from google form to s3 bucket .
+    Parameters:
+    - sheet_url(str): The URL of the Google Sheet containing the 
+      form responses.
+    - sheet_name(str): The name of the specific sheet within the 
+      Google Sheet to retrieve data from.
+    - bucket_name(str): s3 bucket where the credentials key is stored,
+      and where the googleform data is to be stored.
+    - credentials_key(str): The S3 key (path) to the credentials JSON file  
+        needed for authenticating with the Google Sheets API.
+    """
+
     # Validate input parameters
     required_keys = ['sheet_url', 'sheet_name',
                      'bucket_name', 'credentials_key']
@@ -235,8 +243,17 @@ def google_form_to_s3(event, context):
     print(f"Data uploaded to {bucket_name}/{object_key}")
 
 
-# PROCESS CUSTOMERS DATA
 def main_processing_customers(event, context):
+    """
+    Data pprocessing of customers data stored in staging zone 
+    and loading to Redshift
+    Parameters:
+    - s3_bucket(str): s3 bucket name containg staging data
+    - s3_raw_prefix(str): staging zone key in the s3 bucket
+    - date_suffix(datetime object): the date the data was created on the source
+    - db_params(dict): dictionary of Redshift database login 
+    """
+
     s3_bucket = event.get('s3_bucket')
     prefix = event.get('prefix')
     date_suffix = event.get('date_suffix')
@@ -249,7 +266,7 @@ def main_processing_customers(event, context):
     selected_file_key = None
     for obj in response.get('Contents', []):
         key = obj['Key']
-        if key.endswith(f'{date_suffix}.parquet'):  # Changed to .parquet
+        if key.endswith(f'{date_suffix}.parquet'):
             selected_file_key = key
             break
 
@@ -318,8 +335,16 @@ def main_processing_customers(event, context):
         ))
 
 
-# PROCESS DEPARTMENTS DATA
 def main_processing_departments(event, context):
+    """
+    Data pprocessing of departments data stored in staging zone 
+    and loading to Redshift
+    Parameters:
+    - s3_bucket(str): s3 bucket name containg staging data
+    - s3_raw_prefix(str): staging zone key in the s3 bucket
+    - date_suffix(datetime object): the date the data was created on the source
+    - db_params(dict): dictionary of Redshift database login 
+    """
     s3_bucket = event.get('s3_bucket')
     prefix = event.get('prefix')
     date_suffix = event.get('date_suffix')
@@ -332,7 +357,7 @@ def main_processing_departments(event, context):
     selected_file_key = None
     for obj in response.get('Contents', []):
         key = obj['Key']
-        if key.endswith(f'{date_suffix}.parquet'):  # Changed to .parquet
+        if key.endswith(f'{date_suffix}.parquet'):
             selected_file_key = key
             break
 
@@ -392,8 +417,16 @@ def main_processing_departments(event, context):
         ))
 
 
-# PROCESS EMPLOYEES DATA
 def main_processing_employees(event, context):
+    """
+    Data pprocessing of employees data stored in staging zone 
+    and loading to Redshift
+    Parameters:
+    - s3_bucket(str): s3 bucket name containg staging data
+    - s3_raw_prefix(str): staging zone key in the s3 bucket
+    - date_suffix(datetime object): the date the data was created on the source
+    - db_params(dict): dictionary of Redshift database login 
+    """
     s3_bucket = event.get('s3_bucket')
     prefix = event.get('prefix')
     date_suffix = event.get('date_suffix')
@@ -406,7 +439,7 @@ def main_processing_employees(event, context):
     selected_file_key = None
     for obj in response.get('Contents', []):
         key = obj['Key']
-        if key.endswith(f'{date_suffix}.parquet'):  # Changed to .parquet
+        if key.endswith(f'{date_suffix}.parquet'):
             selected_file_key = key
             break
 
@@ -485,8 +518,16 @@ def main_processing_employees(event, context):
         ))
 
 
-# PROCESS INVENTORY
 def main_processing_inventory(event, context):
+    """
+    Data pprocessing of inventory data stored in staging zone 
+    and loading to Redshift
+    Parameters:
+    - s3_bucket(str): s3 bucket name containg staging data
+    - s3_raw_prefix(str): staging zone key in the s3 bucket
+    - date_suffix(datetime object): the date the data was created on the source
+    - db_params(dict): dictionary of Redshift database login 
+    """
     s3_bucket = event.get('s3_bucket')
     prefix = event.get('prefix')
     date_suffix = event.get('date_suffix')
@@ -499,7 +540,7 @@ def main_processing_inventory(event, context):
     selected_file_key = None
     for obj in response.get('Contents', []):
         key = obj['Key']
-        if key.endswith(f'{date_suffix}.parquet'):  # Changed to .parquet
+        if key.endswith(f'{date_suffix}.parquet'):
             selected_file_key = key
             break
 
@@ -551,8 +592,16 @@ def main_processing_inventory(event, context):
         ))
 
 
-# PROCESS ORDERS DATA
 def main_processing_orders(event, context):
+    """
+    Data pprocessing of orders data stored in staging zone 
+    and loading to Redshift
+    Parameters:
+    - s3_bucket(str): s3 bucket name containg staging data
+    - s3_raw_prefix(str): staging zone key in the s3 bucket
+    - date_suffix(datetime object): the date the data was created on the source
+    - db_params(dict): dictionary of Redshift database login 
+    """
     s3_bucket = event.get('s3_bucket')
     prefix = event.get('prefix')
     date_suffix = event.get('date_suffix')
@@ -565,7 +614,7 @@ def main_processing_orders(event, context):
     selected_file_key = None
     for obj in response.get('Contents', []):
         key = obj['Key']
-        if key.endswith(f'{date_suffix}.parquet'):  # Changed to .parquet
+        if key.endswith(f'{date_suffix}.parquet'):
             selected_file_key = key
             break
 
@@ -615,8 +664,16 @@ def main_processing_orders(event, context):
         ))
 
 
-# PROCESS PRODUCTS DATA
 def main_processing_products(event, contex):
+    """
+    Data pprocessing of products data stored in staging zone 
+    and loading to Redshift
+    Parameters:
+    - s3_bucket(str): s3 bucket name containg staging data
+    - s3_raw_prefix(str): staging zone key in the s3 bucket
+    - date_suffix(datetime object): the date the data was created on the source
+    - db_params(dict): dictionary of Redshift database login 
+    """
     s3_bucket = event.get('s3_bucket')
     prefix = event.get('prefix')
     date_suffix = event.get('date_suffix')
@@ -630,7 +687,7 @@ def main_processing_products(event, contex):
     selected_file_key = None
     for obj in response.get('Contents', []):
         key = obj['Key']
-        if key.endswith(f'{date_suffix}.parquet'):  # Changed to .parquet
+        if key.endswith(f'{date_suffix}.parquet'):
             selected_file_key = key
             break
 
@@ -657,9 +714,6 @@ def main_processing_products(event, contex):
 
     # Insert DataFrame rows into Redshift using SQL INSERT INTO statements
     for _, row in df.iterrows():
-        # Safely access 'expiring_date' using
-        # the .get() method to avoid KeyError
-        # Use None if 'expiring_date' is not present
         expiring_date = row.get('expiring_date', None)
         insert_query = f"""
         INSERT INTO {db_params['schema']}.{db_params['table_name']}\
@@ -681,12 +735,21 @@ def main_processing_products(event, contex):
     redshift_conn.commit()
     cursor.close()
     redshift_conn.close()
-    print(f"Data loaded into {db_params['table_name']} in {
-          db_params['schema']} successfully.")
+    print(
+        f"Data loaded into {db_params['table_name']}\
+              in {db_params['schema']} successfully.")
 
 
-# PROCESS PURCHASE_ORDER DATA
 def main_processing_purchase_order(event, contex):
+    """
+    Data processing of purchase_order data stored in staging zone 
+    and loading to Redshift
+    Parameters:
+    - s3_bucket(str): s3 bucket name containg staging data
+    - s3_raw_prefix(str): staging zone key in the s3 bucket
+    - date_suffix(datetime object): the date the data was created on the source
+    - db_params(dict): dictionary of Redshift database login 
+    """
     s3_bucket = event.get('s3_bucket')
     prefix = event.get('prefix')
     date_suffix = event.get('date_suffix')
@@ -754,12 +817,21 @@ def main_processing_purchase_order(event, contex):
     redshift_conn.commit()
     cursor.close()
     redshift_conn.close()
-    print(f"Data loaded into {db_params['table_name']} in {
-          db_params['schema']} successfully.")
+    print(
+        f"Data loaded into {db_params['table_name']}\
+              in {db_params['schema']} successfully.")
 
 
-# PROCESS SUPPLIERS DATA
 def main_processing_suppliers(event, context):
+    """
+    Data pprocessing of suppliers data stored in staging zone 
+    and loading to Redshift
+    Parameters:
+    - s3_bucket(str): s3 bucket name containg staging data
+    - s3_raw_prefix(str): staging zone key in the s3 bucket
+    - date_suffix(datetime object): the date the data was created on the source
+    - db_params(dict): dictionary of Redshift database login 
+    """
     s3_bucket = event.get('s3_bucket')
     prefix = event.get('prefix')
     date_suffix = event.get('date_suffix')
